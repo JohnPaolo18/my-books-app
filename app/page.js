@@ -1,12 +1,18 @@
 import React from "react";
 import BannerPage from "./components/BannerPage";
+import Image from "next/image";
 
 export default function Page() {
   return (
     <div>
       <header className="flex items-center p-4 bg-black shadow-md">
         <div className="mr-4">
-          <img src="/catreader.png" alt="The Lazy Cat" width={50} height={50} />
+          <Image
+            src="/catreader.png"
+            alt="The Lazy Cat"
+            width={50}
+            height={50}
+          />
         </div>
 
         {/*Header Title*/}

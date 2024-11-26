@@ -1,13 +1,13 @@
 "use client";
 
 import React from "react";
-
+import Image from "next/image";
 export default function HomeScreen() {
   return (
     <div>
       <header className="flex items-center p-4 bg-black shadow-md">
         <div className="mr-4">
-          <img
+          <Image
             src="/catreader.png"
             alt="The Lazy Cat Reader"
             width={50}
