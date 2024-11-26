@@ -19,3 +19,11 @@ body {
   background: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background-color: black; /* Match the banner background */
+  height: 100%; /* Ensure it covers the full viewport */
+  width: 100%;
+}
