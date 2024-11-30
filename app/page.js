@@ -12,6 +12,7 @@ export default function Page() {
             alt="The Lazy Cat"
             width={50}
             height={50}
+            unoptimized={true}
           />
         </div>
 
