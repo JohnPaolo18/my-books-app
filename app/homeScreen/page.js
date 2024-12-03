@@ -2,17 +2,19 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
+
 export default function HomeScreen() {
   const [query, setQuery] = useState("");
-  const [books, setBooks] = useState([]); //this will store the books fetched from the API
+  const [books, setBooks] = useState([]); // This will store the books fetched from the API
+  const [selectedBook, setSelectedBook] = useState(null); // To track the selected book
 
   const fetchBooks = async () => {
     try {
       const response = await fetch(
-        `https://www.googleapis.com/books/v1/volumes?q=${query}`
+        `https://www.googleapis.com/books/v1/volumes?q=${query}&key=AIzaSyCqnvXCNwhN2FB4_6u66EO7Ji1RMFEodus`
       );
       const data = await response.json();
-      setBooks(data.items || []); //if there are no items, set it to an empty array to avoid errors
+      setBooks(data.items || []); // If there are no items, set to an empty array to avoid errors
       console.log(data);
     } catch (error) {
       console.error("Error fetching books", error);
@@ -37,8 +39,8 @@ export default function HomeScreen() {
         <h1>Welcome to the Library ᓚᘏᗢ- 🐾</h1>
         <form
           onSubmit={(e) => {
-            e.preventDefault(); //this will prevent the page from refreshing
-            fetchBooks(); //Call the fetchBooks function
+            e.preventDefault(); // Prevent page refresh
+            fetchBooks(); // Call the fetchBooks function
           }}
         >
           <p>Enter Book Title or Author</p>
@@ -47,69 +49,119 @@ export default function HomeScreen() {
             placeholder="Book Title or Author"
             style={{ padding: "8px", width: "300px", color: "black" }}
             value={query}
-            onChange={(e) => setQuery(e.target.value)} //this will update the query state
+            onChange={(e) => setQuery(e.target.value)} // Update the query state
           />
           <div>
             <button
               type="submit"
               className="mt-4 p-2 bg-gradient-to-r from-blue-600 to-blue-800 hover:from-blue-800 hover:to-blue-900 text-white rounded-lg shadow"
             >
-              search
+              Search
             </button>
           </div>
         </form>
-        {/* Display Books */}
+
+        {/* Conditional Rendering: Selected Book or Book List */}
         <div style={{ textAlign: "center", marginTop: "50px" }}>
-          {books.map((book, index) => {
-            const title = book.volumeInfo.title || "No Title Available";
-            const authors = book.volumeInfo?.authors?.join(", ") || "Unknown";
-            const thumbnail =
-              book.volumeInfo.imageLinks?.thumbnail || "/placeholder.png";
-            return (
-              <div
-                key={index}
+          {selectedBook ? (
+            // Display Selected Book Details
+            <div
+              style={{
+                border: "1px solid #ccc",
+                padding: "20px",
+                margin: "20px auto",
+                backgroundColor: "black",
+                borderRadius: "5px",
+                maxWidth: "600px",
+                textAlign: "left",
+              }}
+            >
+              <h2 style={{ fontSize: "24px", marginBottom: "10px" }}>
+                {selectedBook.volumeInfo.title || "No Title Available"}
+              </h2>
+              <p style={{ marginBottom: "10px" }}>
+                <strong>Author(s):</strong>{" "}
+                {selectedBook.volumeInfo.authors?.join(", ") || "Unknown"}
+              </p>
+              <p style={{ marginBottom: "10px" }}>
+                <strong>Summary:</strong>{" "}
+                {selectedBook.volumeInfo.description ||
+                  "No description available."}
+              </p>
+              <p style={{ marginBottom: "10px" }}>
+                <strong>Rating:</strong>{" "}
+                {selectedBook.volumeInfo.averageRating ||
+                  "No ratings available."}
+              </p>
+              <button
+                onClick={() => setSelectedBook(null)} // Back to the list
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  border: "1px solid #ccc",
+                  marginTop: "10px",
+                  padding: "10px 20px",
+                  backgroundColor: "#007BFF",
+                  color: "white",
+                  border: "none",
                   borderRadius: "5px",
-                  padding: "10px",
-                  marginBottom: "10px",
-                  backgroundColor: "#f9f9f9",
+                  cursor: "pointer",
                 }}
               >
-                {/* Book Cover */}
-                <img
-                  src={thumbnail}
-                  alt={`Cover of ${title}`}
+                Back to List
+              </button>
+            </div>
+          ) : (
+            // Display List of Books
+            books.map((book, index) => {
+              const title = book.volumeInfo.title || "No Title Available";
+              const authors = book.volumeInfo?.authors?.join(", ") || "Unknown";
+              const thumbnail =
+                book.volumeInfo.imageLinks?.thumbnail || "/placeholder.png";
+              return (
+                <div
+                  key={index}
+                  onClick={() => setSelectedBook(book)} // Set selected book on click
                   style={{
-                    width: "80px",
-                    height: "120px",
-                    objectFit: "cover",
-                    marginRight: "15px",
+                    display: "flex",
+                    alignItems: "center",
+                    border: "1px solid #ccc",
                     borderRadius: "5px",
+                    padding: "10px",
+                    marginBottom: "10px",
+                    backgroundColor: "#f9f9f9",
+                    cursor: "pointer", // Make it clear the item is clickable
                   }}
-                />
-
-                {/* Book info */}
-                <div>
-                  <h3
+                >
+                  {/* Book Cover */}
+                  <img
+                    src={thumbnail}
+                    alt={`Cover of ${title}`}
                     style={{
-                      margin: "0 0 5px 0",
-                      fontSize: "18px",
-                      color: "#333",
+                      width: "80px",
+                      height: "120px",
+                      objectFit: "cover",
+                      marginRight: "15px",
+                      borderRadius: "5px",
                     }}
-                  >
-                    {title}
-                  </h3>
-                  <p style={{ margin: 0, fontSize: "14 px", color: "#666" }}>
-                    <strong>Author(s):</strong>
-                    {authors}
-                  </p>
+                  />
+
+                  {/* Book info */}
+                  <div>
+                    <h3
+                      style={{
+                        margin: "0 0 5px 0",
+                        fontSize: "18px",
+                        color: "#333",
+                      }}
+                    >
+                      {title}
+                    </h3>
+                    <p style={{ margin: 0, fontSize: "14px", color: "#666" }}>
+                      <strong>Author(s):</strong> {authors}
+                    </p>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </div>
     </div>
