@@ -1,5 +1,6 @@
 import localFont from "next/font/local";
 import "./globals.css";
+import { StarredBooksProvider } from "./context/StarredBooksContext";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -23,7 +24,7 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+        <StarredBooksProvider>{children}</StarredBooksProvider>
       </body>
     </html>
   );
