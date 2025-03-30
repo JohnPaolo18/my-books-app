@@ -1,105 +1,59 @@
 "use client";
 
-import React from "react";
-import Image from "next/image"; // Import Image from Next.js
-import { useStarredBooks } from "../context/StarredBooksContext";
+import React, { useState, useEffect } from "react";
 
 export default function ToBeRead() {
-  const { starredBooks, setStarredBooks } = useStarredBooks();
+  const [starredBooks, setStarredBooks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const toggleStar = (book) => {
-    setStarredBooks(starredBooks.filter((b) => b.id !== book.id));
-  };
+  useEffect(() => {
+    const fetchStarredBooks = async () => {
+      try {
+        const response = await fetch('/api/getStarredBooks', {
+          method: 'GET',
+          headers: { 'Content-Type': 'application/json' },
+        });
+
+        // Check if the response is OK (status code 200-299)
+        if (!response.ok) {
+          throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        setStarredBooks(data);
+      } catch (error) {
+        console.error("Error fetching starred books:", error);
+        setError(error.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStarredBooks();
+  }, []);
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  if (error) {
+    return <div>Error: {error}</div>;
+  }
 
   return (
     <div>
-      {/* Header */}
-      <header className="flex items-center p-4 bg-black shadow-md">
-        <div className="mr-4">
-          <Image
-            src="/catreader.png"
-            alt="The Lazy Cat Reader"
-            width={50}
-            height={50}
-          />
-        </div>
-        <h1 className="text-2xl font-bold">The Lazy Cat Reader</h1>
-      </header>
-
-      {/* To Be Read List */}
-      <h1
-        className="text-2xl font-bold"
-        style={{ textAlign: "center", marginTop: "50px" }}
-      >
-        To Be Read List ᓚᘏᗢ- 🐾
-      </h1>
-      {starredBooks.length === 0 ? (
-        <p
-          className="text-2xl font-bold"
-          style={{ textAlign: "center", marginTop: "50px" }}
-        >
-          No books in your list yet ᓚᘏᗢ- 🐾.
-        </p>
+      <h1>My Reading List</h1>
+      {starredBooks.length > 0 ? (
+        starredBooks.map((book) => (
+          <div key={book.book_id}>
+            <h2>{book.title}</h2>
+            <p>{book.authors}</p>
+            <img src={book.thumbnail} alt={book.title} style={{ width: "100px", height: "150px" }} />
+          </div>
+        ))
       ) : (
-        starredBooks.map((book) => {
-          const title = book.volumeInfo.title || "No Title Available";
-          const authors = book.volumeInfo?.authors?.join(", ") || "Unknown";
-          const thumbnail =
-            book.volumeInfo.imageLinks?.thumbnail || "/placeholder.png";
-
-          return (
-            <div
-              key={book.id}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                border: "1px solid #ccc",
-                borderRadius: "5px",
-                padding: "10px",
-                marginBottom: "10px",
-                backgroundColor: "#f9f9f9",
-              }}
-            >
-              {/* Book Cover */}
-              <img
-                src={thumbnail}
-                alt={`Cover of ${title}`}
-                style={{
-                  width: "80px",
-                  height: "120px",
-                  objectFit: "cover",
-                  marginRight: "15px",
-                  borderRadius: "5px",
-                }}
-              />
-
-              {/* Book Info */}
-              <div style={{ flex: 1 }}>
-                <h3 style={{ margin: "0 0 5px 0", fontSize: "18px" }}>
-                  {title}
-                </h3>
-                <p style={{ margin: 0, fontSize: "14px", color: "#666" }}>
-                  <strong>Author(s):</strong> {authors}
-                </p>
-              </div>
-
-              {/* Star Button */}
-              <button
-                onClick={() => toggleStar(book)}
-                style={{
-                  backgroundColor: "#ffcc00",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "50%",
-                  padding: "10px",
-                  cursor: "pointer",
-                }}
-              >
-                ⭐
-              </button>
-            </div>
-          );
-        })
+        <p>No books in your reading list yet.</p>
       )}
     </div>
   );

@@ -1,16 +1,34 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useStarredBooks } from "../context/StarredBooksContext";
 
 export default function HomeScreen() {
-  const { starredBooks, setStarredBooks } = useStarredBooks();
-  const [query, setQuery] = useState(""); // To track the search query
-  const [books, setBooks] = useState([]); // To store the books fetched from the API
-  const [selectedBook, setSelectedBook] = useState(null); // To track the selected book
-  const router = useRouter(); // Initialize router
+  const [query, setQuery] = useState("");
+  const [books, setBooks] = useState([]);
+  const [starredBooks, setStarredBooks] = useState([]);
+  const [selectedBook, setSelectedBook] = useState(null);
+  const router = useRouter();
+
+  // Fetch starred books on component mount
+  useEffect(() => {
+    fetch('/api/getStarredBooks')
+      .then((response) => response.json())
+      .then((data) => {
+        // Ensure `data` is an array
+        if (Array.isArray(data)) {
+          setStarredBooks(data);
+        } else {
+          console.error('Invalid data format: expected an array');
+          setStarredBooks([]); // Fallback to an empty array
+        }
+      })
+      .catch((error) => {
+        console.error('Error fetching starred books:', error);
+        setStarredBooks([]); // Fallback to an empty array
+      });
+  }, []);
 
   // Fetch books from the Google Books API
   const fetchBooks = async () => {
@@ -19,19 +37,37 @@ export default function HomeScreen() {
         `https://www.googleapis.com/books/v1/volumes?q=${query}&key=${process.env.NEXT_PUBLIC_GOOGLE_BOOKS_API_KEY}`
       );
       const data = await response.json();
-      setBooks(data.items || []); // If there are no items, set to an empty array
+      setBooks(data.items || []);
     } catch (error) {
-      console.error("Error fetching books", error);
+      console.error("Error fetching books:", error);
     }
   };
 
-  // Toggle star (add or remove from starred list)
-  const toggleStar = (book) => {
-    const isStarred = starredBooks.some((b) => b.id === book.id);
+  // Toggle star (add/remove from starred list)
+  const toggleStar = async (book) => {
+    const isStarred = starredBooks.some((b) => b.book_id === book.id);
+
     if (isStarred) {
-      setStarredBooks(starredBooks.filter((b) => b.id !== book.id)); // Remove from starred
+      // Unstar the book
+      await fetch('/api/unstarBook', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ book_id: book.id }),
+      });
+      setStarredBooks(starredBooks.filter((b) => b.book_id !== book.id));
     } else {
-      setStarredBooks([...starredBooks, book]); // Add to starred
+      // Star the book
+      await fetch('/api/starBook', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          book_id: book.id,
+          title: book.volumeInfo.title,
+          authors: book.volumeInfo.authors?.join(", "),
+          thumbnail: book.volumeInfo.imageLinks?.thumbnail,
+        }),
+      });
+      setStarredBooks([...starredBooks, { book_id: book.id, title: book.volumeInfo.title }]);
     }
   };
 
@@ -40,14 +76,9 @@ export default function HomeScreen() {
       {/* Header */}
       <header className="flex items-center p-4 bg-black shadow-md">
         <div className="mr-4">
-          <Image
-            src="/catreader.png"
-            alt="The Lazy Cat Reader"
-            width={50}
-            height={50}
-          />
+          <Image src="/catreader.png" alt="The Lazy Cat Reader" width={50} height={50} />
         </div>
-        <h1 className="text-2xl font-bold">The Lazy Cat Reader</h1>
+        <h1 className="text-2xl font-bold text-white">The Lazy Cat Reader</h1>
       </header>
 
       {/* Search Form */}
@@ -55,8 +86,8 @@ export default function HomeScreen() {
         <h1>Welcome to the Library ᓚᘏᗢ- 🐾</h1>
         <form
           onSubmit={(e) => {
-            e.preventDefault(); // Prevent page refresh
-            fetchBooks(); // Fetch books
+            e.preventDefault();
+            fetchBooks();
           }}
         >
           <p>Enter Book Title or Author</p>
@@ -65,7 +96,7 @@ export default function HomeScreen() {
             placeholder="Book Title or Author"
             style={{ padding: "8px", width: "300px", color: "black" }}
             value={query}
-            onChange={(e) => setQuery(e.target.value)} // Update the query
+            onChange={(e) => setQuery(e.target.value)}
           />
           <div>
             <button
@@ -77,10 +108,10 @@ export default function HomeScreen() {
           </div>
         </form>
 
-        {/* Button to Navigate to "My Reading List" */}
+        {/* Navigate to "My Reading List" */}
         <div style={{ marginTop: "20px" }}>
           <button
-            onClick={() => router.push("/ToBeRead")} // Navigate to To Be Read page
+            onClick={() => router.push("/ToBeRead")}
             style={{
               padding: "10px 20px",
               backgroundColor: "#007BFF",
@@ -94,10 +125,9 @@ export default function HomeScreen() {
           </button>
         </div>
 
-        {/* Conditional Rendering: Selected Book or Book List */}
+        {/* Render Book List or Selected Book */}
         <div style={{ textAlign: "center", marginTop: "50px" }}>
           {selectedBook ? (
-            // Display Selected Book Details
             <div
               style={{
                 border: "1px solid #ccc",
@@ -109,25 +139,20 @@ export default function HomeScreen() {
                 textAlign: "left",
               }}
             >
-              <h2 style={{ fontSize: "24px", marginBottom: "10px" }}>
+              <h2 style={{ fontSize: "24px", marginBottom: "10px", color: "white" }}>
                 {selectedBook.volumeInfo.title || "No Title Available"}
               </h2>
-              <p style={{ marginBottom: "10px" }}>
-                <strong>Author(s):</strong>{" "}
-                {selectedBook.volumeInfo.authors?.join(", ") || "Unknown"}
+              <p style={{ marginBottom: "10px", color: "white" }}>
+                <strong>Author(s):</strong> {selectedBook.volumeInfo.authors?.join(", ") || "Unknown"}
               </p>
-              <p style={{ marginBottom: "10px" }}>
-                <strong>Summary:</strong>{" "}
-                {selectedBook.volumeInfo.description ||
-                  "No description available."}
+              <p style={{ marginBottom: "10px", color: "white" }}>
+                <strong>Summary:</strong> {selectedBook.volumeInfo.description || "No description available."}
               </p>
-              <p style={{ marginBottom: "10px" }}>
-                <strong>Rating:</strong>{" "}
-                {selectedBook.volumeInfo.averageRating ||
-                  "No ratings available."}
+              <p style={{ marginBottom: "10px", color: "white" }}>
+                <strong>Rating:</strong> {selectedBook.volumeInfo.averageRating || "No ratings available."}
               </p>
               <button
-                onClick={() => setSelectedBook(null)} // Back to the list
+                onClick={() => setSelectedBook(null)}
                 style={{
                   marginTop: "10px",
                   padding: "10px 20px",
@@ -142,12 +167,10 @@ export default function HomeScreen() {
               </button>
             </div>
           ) : (
-            // Display List of Books
             books.map((book) => {
               const title = book.volumeInfo.title || "No Title Available";
-              const authors = book.volumeInfo?.authors?.join(", ") || "Unknown";
-              const thumbnail =
-                book.volumeInfo.imageLinks?.thumbnail || "/placeholder.png";
+              const authors = book.volumeInfo.authors?.join(", ") || "Unknown";
+              const thumbnail = book.volumeInfo.imageLinks?.thumbnail || "/placeholder.png";
 
               return (
                 <div
@@ -162,9 +185,8 @@ export default function HomeScreen() {
                     backgroundColor: "#f9f9f9",
                     cursor: "pointer",
                   }}
-                  onClick={() => setSelectedBook(book)} // Set selected book
+                  onClick={() => setSelectedBook(book)}
                 >
-                  {/* Book Cover */}
                   <img
                     src={thumbnail}
                     alt={`Cover of ${title}`}
@@ -176,7 +198,6 @@ export default function HomeScreen() {
                       borderRadius: "5px",
                     }}
                   />
-                  {/* Book Info */}
                   <div style={{ flex: 1 }}>
                     <h3
                       style={{
@@ -191,21 +212,14 @@ export default function HomeScreen() {
                       <strong>Author(s):</strong> {authors}
                     </p>
                   </div>
-                  {/* Star Button */}
                   <button
                     onClick={(e) => {
-                      e.stopPropagation(); // Prevent book click
-                      toggleStar(book); // Toggle star
+                      e.stopPropagation();
+                      toggleStar(book);
                     }}
                     style={{
-                      backgroundColor: starredBooks.some(
-                        (b) => b.id === book.id
-                      )
-                        ? "#ffcc00"
-                        : "transparent",
-                      color: starredBooks.some((b) => b.id === book.id)
-                        ? "#fff"
-                        : "#000",
+                      backgroundColor: starredBooks.some((b) => b.book_id === book.id) ? "#ffcc00" : "transparent",
+                      color: starredBooks.some((b) => b.book_id === book.id) ? "#fff" : "#000",
                       border: "1px solid #ffcc00",
                       borderRadius: "50%",
                       padding: "10px",
@@ -215,7 +229,7 @@ export default function HomeScreen() {
                       justifyContent: "center",
                     }}
                   >
-                    {starredBooks.some((b) => b.id === book.id) ? "⭐" : "☆"}
+                    {starredBooks.some((b) => b.book_id === book.id) ? "⭐" : "☆"}
                   </button>
                 </div>
               );

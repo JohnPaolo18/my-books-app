@@ -17,7 +17,6 @@ export default function BannerPage() {
         display: "flex",
         justifyContent: "flex-start",
         alignItems: "center",
-        paddingLeft: "50px",
         paddingLeft: "760px",
         paddingTop: "275px",
       }}
@@ -35,7 +34,7 @@ export default function BannerPage() {
           cursor: "pointer",
         }}
       >
-        Let&apos;s find your favorite book
+        Let's find your favorite book
       </button>
     </div>
   );
